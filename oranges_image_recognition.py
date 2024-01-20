@@ -36,44 +36,42 @@ validation_steps = (test_generator.samples // test_generator.batch_size) + 1
 
 """##########################################################################################################################################"""
 """MODEL: I turn off this code block because the trained model has been saved in a variable, so, it is not neccesary to train again every time the app runs, but if we need to retrain the model we just have to uncoment the upper code block and modifie it."""
-# """Build the Model"""
-# model = Sequential([
-#     layers.Conv2D(8, (3, 3), activation='relu', input_shape = (150, 150, 3)),
-#     layers.MaxPooling2D(2, 2),
-#     layers.Conv2D(64, (3, 3), activation='relu'),
-#     layers.MaxPooling2D(2, 2),
-#     layers.Conv2D(128, (3, 3), activation='relu'),
-#     layers.Flatten(),
-#     layers.Dense(512, activation='relu'),
-#     layers.Dense(1, activation='sigmoid') #Use 'softmax' for multiple classes   
-# ])
+"""Build the Model"""
+model = Sequential([
+    layers.Conv2D(8, (3, 3), activation='relu', input_shape = (150, 150, 3)),
+    layers.MaxPooling2D(2, 2),
+    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.MaxPooling2D(2, 2),
+    layers.Conv2D(128, (3, 3), activation='relu'),
+    layers.Flatten(),
+    layers.Dense(512, activation='relu'),
+    layers.Dense(1, activation='sigmoid') #Use 'softmax' for multiple classes   
+])
 
-# model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'], run_eagerly=True)
-
-
-# """Train the Model"""
-# epochs_history = model.fit(
-#     train_generator,
-#     steps_per_epoch=steps_per_epoch,
-#     epochs=50,
-#     validation_data=test_generator,
-#     validation_steps=validation_steps
-# )
-
-# """Saving trained model"""
-# model.save('C:/Users/raven/OneDrive/Escritorio/AI_Trained_Models/Oranges_Image_Recognition.h5') #Your Path
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'], run_eagerly=True)
 
 
-# """Plot training history"""
-# plt.plot(epochs_history.history['loss'])
-# plt.title('Lossing progress during model training')
-# plt.xlabel('Epoch')
-# plt.ylabel('Loss')
-# plt.legend('Training Loss')
-# plt.show()
+"""Train the Model"""
+epochs_history = model.fit(
+    train_generator,
+    steps_per_epoch=steps_per_epoch,
+    epochs=5,
+    validation_data=test_generator,
+    validation_steps=validation_steps
+)
+
+"""Saving trained model"""
+model.save('C:/Users/raven/OneDrive/Escritorio/AI_Trained_Models/Oranges_Image_Recognition.h5') #Your Path
+
+
+"""Plot training history"""
+plt.plot(epochs_history.history['accuracy'])
+plt.title('Lossing progress during model training')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend('Training Loss')
+plt.show()
 """########################################################################################################################################"""
-
-
 
 
 """Load entire model"""
