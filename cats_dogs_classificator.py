@@ -3,33 +3,41 @@ import matplotlib.pyplot as plt
 from keras.preprocessing.image import ImageDataGenerator
 from keras.preprocessing import image
 import numpy as np
+import numpy
+import cv2
 
 
 #Use your own dataset instead or use dataset provided by me in GitHub
 train_datagen = ImageDataGenerator(rescale=1./255)
 validation_datagen = ImageDataGenerator(rescale=1./255)
 
-train_generator = train_datagen.flow_from_directory(
+dataset_flow = train_datagen.flow_from_directory(
     'C:/Users/raven/OneDrive/Escritorio/DataSets/pets_dataset/train', #Your Path
-    target_size=(150, 150),
-    batch_size=6,
-    class_mode='binary', #Use 'categorical' for multiple classes
-    color_mode='grayscale',
-    shuffle=False
 )
 
-validation_generator = validation_datagen.flow_from_directory(
-    'C:/Users/raven/OneDrive/Escritorio/DataSets/pets_dataset/validation', #Your Path
-    target_size=(150, 150),
-    batch_size=6,
-    class_mode='binary',
-    color_mode='grayscale',
-    shuffle=False
-)
+IMAGE_SIZE = 100
 
-#Calculating steps per epoch and validation steps
-steps_per_epoch = train_generator.samples // train_generator.batch_size
-validation_steps = validation_generator.samples // validation_generator.batch_size 
+training_data = []
+
+for i, (image, etiquete) in enumerate(dataset_flow):
+    image = cv2.resize(image.numpy(), (IMAGE_SIZE, IMAGE_SIZE))
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    image = image.reshape(IMAGE_SIZE, IMAGE_SIZE, 1)
+    training_data.append([image, etiquete])
+
+#Preparing x(inputs) and y(etiquetes) by separated way
+x = [] #Input images
+y = [] #Etiquetes(Dog or Cat)
+
+for image, etiquete in training_data:
+    x.append(image)
+    y.append(etiquete)
+
+#Normalazing images. To return it in 0-1 instead 0-255
+x = np.array(x).astype(float) / 255
+
+#Transform etiquetes in a simple array
+y = np.array(y)
 
 """CREATING MODEL: Use 'Sigmoid' activation function instead softmax. Sigmoid ever returns data between 0-1. Realize a training to determine if the data returned is close to 0 it is a cat, but instead it is close to 1, it is a dog."""
 model = tf.keras.models.Sequential([
@@ -61,25 +69,46 @@ model.compile(optimizer='adam',
 from keras.callbacks import TensorBoard
 
 model_tensorboard = TensorBoard(log_dir='logs/model')
-model.fit(train_generator,
-            steps_per_epoch = steps_per_epoch,
-            validation_data = validation_generator,
-            validation_steps= validation_steps,
+model.fit(x, y, batch_size=12,
+          validation_split=0.15,
             epochs=15,
             callbacks=[model_tensorboard]
 )
 
 # #Realize Data incrementation with various transformations. 
-# datagen = ImageDataGenerator(
-#     rotation_range=30, #Rotate the image 30 degres to show it to the model for better understanding of the images looking towards different angles
-#     width_shift_range=0.2,
-#     height_shift_range=0.2,
-#     shear_range=15,
-#     zoom_range=[0.7, 1.4], #Increment and decrement zoom from 0.7 to 1.4 range
-#     horizontal_flip=True, #Turn image 180 degrees horizontaly
-#     vertical_flip=True #Turn image 180 degrees verticaly
-# )
-# datagen.fit()
+datagen = ImageDataGenerator(
+    rotation_range=30, #Rotate the image 30 degres to show it to the model for better understanding of the images looking towards different angles
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    shear_range=15,
+    zoom_range=[0.7, 1.4], #Increment and decrement zoom from 0.7 to 1.4 range
+    horizontal_flip=True, #Turn image 180 degrees horizontaly
+    vertical_flip=True #Turn image 180 degrees verticaly
+)
+datagen.fit(x)
+
+#Separating training and validation data
+x_training = x[:12]
+x_validation = x[12:]
+
+y_training = y[:12]
+y_validation = y[12:]
+
+#Use flow function from generator to create an iterator to send it as a training to fit function of the model
+datagen_training = datagen.flow(x_training, batch_size=32)
+
+model_tensorboard = TensorBoard(log_dir='logs/model_AD')
+
+model.fit(
+    datagen_training,
+    epochs = 15, batch_size = 32,
+    validation_data = (x_validation, y_validation),
+    steps_per_epoch=int(np.ceil(len(x_training) / float(32))),
+    validation_steps=int(np.ceil(len(x_validation) / float(32))),
+    callbacks=[model_tensorboard]
+)
+
+model.save('dogs-cats.h5')
 
 """PREDICTION METHOD"""
 def image_predict(image_path:str):
